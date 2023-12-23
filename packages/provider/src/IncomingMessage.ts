@@ -25,6 +25,7 @@ export class IncomingMessage {
   decoder: Decoder
 
   constructor(data: any) {
+    // data为WebSocket的message事件MessageEvent.data字段
     this.data = data
     this.encoder = createEncoder()
     this.decoder = createDecoder(new Uint8Array(this.data))

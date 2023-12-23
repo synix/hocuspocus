@@ -38,6 +38,7 @@ import {
 export type HocuspocusProviderConfiguration =
   Required<Pick<CompleteHocuspocusProviderConfiguration, 'name'>>
     & Partial<CompleteHocuspocusProviderConfiguration> & (
+  // 也就是说url和websocketProvider两者必须提供其一
   Required<Pick<CompleteHocuspocusProviderWebsocketConfiguration, 'url'>> |
   Required<Pick<CompleteHocuspocusProviderConfiguration, 'websocketProvider'>>
   )
@@ -126,6 +127,7 @@ export class HocuspocusProvider extends EventEmitter {
     awareness: undefined,
     token: null,
     parameters: {},
+    // broadcast缺省值是true，也就是，缺省是支持在多个tab之间通过广播同步的
     broadcast: true,
     forceSyncInterval: false,
     onAuthenticated: () => null,
@@ -143,6 +145,7 @@ export class HocuspocusProvider extends EventEmitter {
     onAwarenessChange: () => null,
     onStateless: () => null,
     quiet: false,
+    // 缺省是支持自动连接/断开的，而不是手动连接/断开
     connect: true,
     preserveConnection: true,
   }
@@ -161,6 +164,7 @@ export class HocuspocusProvider extends EventEmitter {
 
   mux = mutex.createMutex()
 
+  // intervals存放着轮询的定时器，也就是setInterval()的返回值
   intervals: any = {
     forceSync: null,
   }
@@ -255,6 +259,7 @@ export class HocuspocusProvider extends EventEmitter {
 
   public setConfiguration(configuration: Partial<HocuspocusProviderConfiguration> = {}): void {
     if (!configuration.websocketProvider && (configuration as CompleteHocuspocusProviderWebsocketConfiguration).url) {
+      // 如果configuration中未提供websocketProvider，但是提供了url，那么就创建一个websocketProvider
       const websocketProviderConfig = configuration as CompleteHocuspocusProviderWebsocketConfiguration
 
       this.configuration.websocketProvider = new HocuspocusProviderWebsocket({
@@ -293,6 +298,7 @@ export class HocuspocusProvider extends EventEmitter {
   }
 
   forceSync() {
+    // forceSync()方法会发送SyncStepOneMessage消息
     this.send(SyncStepOneMessage, { document: this.document, documentName: this.configuration.name })
   }
 
