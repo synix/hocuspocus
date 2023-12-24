@@ -201,7 +201,7 @@ export class HocuspocusProviderWebsocket extends EventEmitter {
 
     // 也就是说，如果没有提供WebSocketPolyfill，那么就使用WebSocket来创建websocket连接
     // 什么时候需要提供WebSocketPolyfill？
-    // 比如在nodejs环境下，没有WebSocket，那就需要提供WebSocketPolyfill
+    // 比如在nodejs环境下，没有WebSocket，那就需要提供WebSocketPolyfill，例如通过ws库(https://github.com/websockets/ws/blob/master/doc/ws.md#class-websocket)
     this.configuration.WebSocketPolyfill = configuration.WebSocketPolyfill
       ? configuration.WebSocketPolyfill
       : WebSocket

@@ -76,6 +76,8 @@ export class MessageReceiver {
 
     message.writeVarUint(MessageType.Sync)
 
+    // readSyncMessage()函数返回messageType，有3个值，分别是: SyncStep1(0) / SyncStep2(1) / Update(2)
+
     // Apply update
     const syncMessageType = readSyncMessage(
       message.decoder,
@@ -109,6 +111,7 @@ export class MessageReceiver {
   }
 
   private applyAuthMessage(provider: HocuspocusProvider) {
+    // 收到服务端的Auth响应
     const { message } = this
 
     readAuthMessage(

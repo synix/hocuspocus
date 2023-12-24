@@ -1,6 +1,9 @@
 import { Hocuspocus, Configuration } from '@hocuspocus/server'
 
 export const newHocuspocus = (options?: Partial<Configuration>) => {
+  // 创建一个Hocuspocus Server实例(Hocuspocus类实例)并返回
+  // 端口是随机的
+
   const server = new Hocuspocus({
     // We don’t need the logging in testing.
     quiet: true,

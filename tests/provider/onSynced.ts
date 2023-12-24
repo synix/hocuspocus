@@ -82,6 +82,8 @@ test('send all messages according to the protocol', async t => {
         // timeout is required as "synced" is triggered before last SyncStep2 is sent to server
         await sleep(200)
 
+        // 下面所说的这个同步协议(sync protocol)定义于y-protocols库中的sync.js中
+
         // In a provider-server model, you want to handle this differently: The provider should initiate the connection with SyncStep1.
         // When the server receives SyncStep1, it should reply with SyncStep2 immediately followed by SyncStep1. The provider replies
         // with SyncStep2 when it receives SyncStep1. Optionally the server may send a SyncDone after it received SyncStep2, so the

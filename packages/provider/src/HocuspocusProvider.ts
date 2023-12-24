@@ -156,10 +156,12 @@ export class HocuspocusProvider extends EventEmitter {
 
   unsyncedChanges = 0
 
+  // 映射了HocuspocusProviderWebsocket的status字段
   status = WebSocketStatus.Disconnected
 
   isAuthenticated = false
 
+  // authorizedScope代表authentication，服务端返回的一个scope值，用于标识用户所具备的权限
   authorizedScope: string | undefined = undefined
 
   mux = mutex.createMutex()
@@ -169,6 +171,9 @@ export class HocuspocusProvider extends EventEmitter {
     forceSync: null,
   }
 
+  // isConnected和status的区别是什么？
+  // isConnected为true时，表示已经接收到WebSocket的open消息; status为Connected时，表示已经接收到WebSocket的message消息
+  // isConnected为false时，表示调用了disconnect()函数; status为Disconnected时，表示已经接收到WebSocket的close消息
   isConnected = true
 
   constructor(configuration: HocuspocusProviderConfiguration) {
@@ -179,7 +184,9 @@ export class HocuspocusProvider extends EventEmitter {
     this.configuration.awareness = configuration.awareness !== undefined ? configuration.awareness : new Awareness(this.document)
 
     this.on('open', this.configuration.onOpen)
+    // WebSocket接收到message消息后，会触发message事件
     this.on('message', this.configuration.onMessage)
+    // 调用send()函数时，会触发outgoingMessage事件
     this.on('outgoingMessage', this.configuration.onOutgoingMessage)
     this.on('synced', this.configuration.onSynced)
     this.on('destroy', this.configuration.onDestroy)
@@ -193,6 +200,7 @@ export class HocuspocusProvider extends EventEmitter {
     this.configuration.websocketProvider.on('connect', this.configuration.onConnect)
     this.configuration.websocketProvider.on('connect', this.forwardConnect)
 
+    // 表示已经接收到WebSocket的open消息
     this.configuration.websocketProvider.on('open', this.boundOnOpen)
     this.configuration.websocketProvider.on('open', this.forwardOpen)
 
@@ -216,6 +224,7 @@ export class HocuspocusProvider extends EventEmitter {
       this.emit('awarenessChange', { states: awarenessStatesToArray(this.awareness!.getStates()) })
     })
 
+    // document发生change时
     this.document.on('update', this.documentUpdateHandler.bind(this))
     this.awareness?.on('update', this.awarenessUpdateHandler.bind(this))
     this.registerEventListeners()
@@ -298,7 +307,7 @@ export class HocuspocusProvider extends EventEmitter {
   }
 
   forceSync() {
-    // forceSync()方法会发送SyncStepOneMessage消息
+    // forceSync()方法会发送SyncStep1消息
     this.send(SyncStepOneMessage, { document: this.document, documentName: this.configuration.name })
   }
 
@@ -326,6 +335,9 @@ export class HocuspocusProvider extends EventEmitter {
     }
 
     this.incrementUnsyncedChanges()
+    // document发生变化时, 会发送Update消息给服务端
+    // update是什么？ 
+    // See https://docs.yjs.dev/api/document-updates
     this.send(UpdateMessage, { update, documentName: this.configuration.name }, true)
   }
 
@@ -350,6 +362,7 @@ export class HocuspocusProvider extends EventEmitter {
   }
 
   set synced(state) {
+    // 接收到服务端的SyncStep2消息后，会设置synced为true
     if (this.isSynced === state) {
       return
     }
@@ -364,6 +377,7 @@ export class HocuspocusProvider extends EventEmitter {
   }
 
   get isAuthenticationRequired(): boolean {
+    // 如果token有值，并且isAuthenticated为false，那么就需要进行authentication
     return !!this.configuration.token && !this.isAuthenticated
   }
 
@@ -373,6 +387,8 @@ export class HocuspocusProvider extends EventEmitter {
       this.subscribeToBroadcastChannel()
     }
 
+    // 创建WebSocket对象，创建WebSocket连接
+    // 接收到WebSocket的message事件后，connect()函数会返回
     return this.configuration.websocketProvider.connect()
   }
 
@@ -388,11 +404,13 @@ export class HocuspocusProvider extends EventEmitter {
   }
 
   async onOpen(event: Event) {
+    // 此时已经接收到WebSocket的open消息
     this.isAuthenticated = false
     this.isConnected = true
 
     this.emit('open', { event })
 
+    // 这里从configuration中获取token，如果获取token时抛出异常，会调用permissionDeniedHandler()触发authenticationFailed事件
     let token: string | null
     try {
       token = await this.getToken()
@@ -422,6 +440,11 @@ export class HocuspocusProvider extends EventEmitter {
 
   startSync() {
     this.incrementUnsyncedChanges()
+    // 发送SyncStep1消息
+    // 什么时候调用startSync()函数发送SyncStep1消息？
+    // 有2个情况:
+    //// 情况1，是在接收到WebSocket的open事件时
+    //// 情况2，是在接收到服务端返回的authentication响应时
     this.send(SyncStepOneMessage, { document: this.document, documentName: this.configuration.name })
 
     if (this.awareness && this.awareness.getLocalState() !== null) {
@@ -433,6 +456,7 @@ export class HocuspocusProvider extends EventEmitter {
     }
   }
 
+  // 发送和接收WebSocket消息，封装进了MessageSender和MessageReceiver
   send(message: ConstructableOutgoingMessage, args: any, broadcast = false) {
     if (!this.isConnected) {
       return
